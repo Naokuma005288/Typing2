@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>6月単語テスト 手書き練習</title>
+<style>
+  :root{
+    --bg:#f6f7fb;
+    --panel:#ffffff;
+    --ink:#151826;
+    --muted:#6d7280;
+    --line:#e5e7ef;
+    --accent:#3b82f6;
+    --good:#16a34a;
+    --bad:#dc2626;
+    --warn:#f59e0b;
+    --shadow: 0 18px 50px rgba(15, 23, 42, .10);
+    --radius: 22px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(59,130,246,.16), transparent 28%),
+      radial-gradient(circle at 90% 10%, rgba(34,197,94,.12), transparent 24%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100svh;
+  }
+  .app{
+    width:min(1050px, 100%);
+    margin:0 auto;
+    padding:22px;
+  }
+  header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:14px;
+  }
+  h1{
+    font-size:clamp(24px, 4vw, 38px);
+    line-height:1.05;
+    margin:0;
+    letter-spacing:.02em;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:14px;
+    margin-top:8px;
+    line-height:1.55;
+  }
+  .pill{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.8);
+    backdrop-filter: blur(10px);
+    border-radius:999px;
+    padding:10px 14px;
+    color:var(--muted);
+    white-space:nowrap;
+    font-weight:700;
+    box-shadow:0 8px 30px rgba(15,23,42,.06);
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:12px;
+    margin:16px 0;
+  }
+  .stat{
+    background:rgba(255,255,255,.84);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:14px;
+    box-shadow:0 8px 30px rgba(15,23,42,.06);
+  }
+  .stat b{font-size:24px; display:block}
+  .stat span{font-size:12px; color:var(--muted); font-weight:800}
+  .card{
+    background:rgba(255,255,255,.88);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:22px;
+    overflow:hidden;
+  }
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  button{
+    appearance:none;
+    border:0;
+    border-radius:999px;
+    padding:12px 16px;
+    background:#eef2ff;
+    color:#25315f;
+    font-weight:900;
+    font-size:14px;
+    cursor:pointer;
+    transition:.15s transform, .15s filter, .15s background;
+    touch-action:manipulation;
+  }
+  button:hover{filter:brightness(.98)}
+  button:active{transform:scale(.97)}
+  button.primary{background:var(--accent); color:white}
+  button.good{background:var(--good); color:white}
+  button.bad{background:#fee2e2; color:#991b1b}
+  button.ghost{background:#f4f5f8; color:#3f4657}
+  button.on{outline:3px solid rgba(59,130,246,.25); background:#dbeafe}
+  .question{
+    border:1px solid var(--line);
+    background:
+      linear-gradient(180deg, rgba(248,250,252,.92), rgba(255,255,255,.92));
+    border-radius:20px;
+    padding:22px;
+    margin-bottom:16px;
+  }
+  .meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    margin-bottom:12px;
+  }
+  .tag{
+    display:inline-flex;
+    gap:6px;
+    align-items:center;
+    border-radius:999px;
+    padding:7px 10px;
+    background:#eef2ff;
+    color:#334155;
+    font-weight:900;
+    font-size:12px;
+  }
+  .jp{
+    font-size:clamp(26px, 6vw, 52px);
+    font-weight:950;
+    line-height:1.18;
+    letter-spacing:.02em;
+    margin:6px 0 4px;
+  }
+  .note{
+    color:var(--muted);
+    font-size:14px;
+    font-weight:700;
+  }
+  .answerWrap{
+    position:relative;
+    margin:12px 0 10px;
+  }
+  input#answer{
+    width:100%;
+    min-height:88px;
+    border:3px solid #d6dbe8;
+    outline:0;
+    border-radius:22px;
+    background:
+      repeating-linear-gradient(0deg, transparent 0, transparent 31px, rgba(59,130,246,.10) 32px),
+      white;
+    font-size:clamp(30px, 7vw, 56px);
+    font-weight:900;
+    padding:16px 20px;
+    letter-spacing:.02em;
+    color:var(--ink);
+    caret-color:var(--accent);
+    box-shadow: inset 0 2px 10px rgba(15,23,42,.04);
+  }
+  input#answer:focus{border-color:rgba(59,130,246,.65)}
+  input#answer.correct{
+    border-color:var(--good);
+    background:
+      repeating-linear-gradient(0deg, transparent 0, transparent 31px, rgba(22,163,74,.10) 32px),
+      #f0fdf4;
+  }
+  input#answer.wrong{
+    border-color:var(--bad);
+    background:
+      repeating-linear-gradient(0deg, transparent 0, transparent 31px, rgba(220,38,38,.10) 32px),
+      #fff1f2;
+    animation:shake .22s linear 2;
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-8px)}
+    75%{transform:translateX(8px)}
+  }
+  .feedback{
+    min-height:30px;
+    font-size:18px;
+    font-weight:950;
+    margin:8px 0 14px;
+  }
+  .feedback.good{color:var(--good)}
+  .feedback.bad{color:var(--bad)}
+  .feedback.warn{color:var(--warn)}
+  .actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+  }
+  .smallText{
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.55;
+    margin-top:14px;
+  }
+  details{
+    margin-top:16px;
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:#fff;
+    overflow:hidden;
+  }
+  summary{
+    cursor:pointer;
+    padding:14px 16px;
+    font-weight:950;
+  }
+  .list{
+    padding:0 16px 16px;
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:8px;
+  }
+  .item{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:10px;
+    background:#fafafa;
+    font-size:13px;
+  }
+  .item b{font-size:14px}
+  .missBox{
+    margin-top:16px;
+    display:none;
+  }
+  .missBox.show{display:block}
+  .misses{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:8px;
+  }
+  .missChip{
+    background:#fff7ed;
+    color:#9a3412;
+    border:1px solid #fed7aa;
+    border-radius:999px;
+    padding:8px 10px;
+    font-size:12px;
+    font-weight:900;
+  }
+  .confetti{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .confetti i{
+    position:absolute;
+    width:10px;
+    height:16px;
+    border-radius:3px;
+    background:currentColor;
+    top:-20px;
+    animation:fall 1s ease-in forwards;
+  }
+  @keyframes fall{
+    to{transform:translateY(110svh) rotate(540deg); opacity:0}
+  }
+  @media (max-width:720px){
+    .app{padding:14px}
+    header{display:block}
+    .pill{display:inline-block; margin-top:12px}
+    .grid{grid-template-columns:repeat(2, 1fr)}
+    .card{padding:16px}
+    .list{grid-template-columns:1fr}
+    button{font-size:13px; padding:11px 13px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>6月単語テスト<br>手書き練習</h1>
+      <div class="sub">Apple Pencilなら下の入力欄にそのまま書けます。正解したら自動で次へ、不正解なら同じ問題をもう一回。</div>
+    </div>
+    <div class="pill">30点以上合格モード🔥</div>
+  </header>
+
+  <div class="grid">
+    <div class="stat"><b id="done">0</b><span>正解数</span></div>
+    <div class="stat"><b id="total">41</b><span>問題数</span></div>
+    <div class="stat"><b id="streak">0</b><span>連続正解</span></div>
+    <div class="stat"><b id="accuracy">100%</b><span>正答率</span></div>
+  </div>
+
+  <main class="card">
+    <div class="toolbar">
+      <button id="modeWords" class="primary">単語41</button>
+      <button id="modeAux">助動詞</button>
+      <button id="modeAll">全部</button>
+      <button id="shuffle" class="on">シャッフル ON</button>
+      <button id="missOnly" class="ghost">苦手だけ</button>
+      <button id="reset" class="bad">最初から</button>
+    </div>
+
+    <section class="question">
+      <div class="meta">
+        <span class="tag" id="qNo">No.1</span>
+        <span class="tag" id="qType">単語</span>
+      </div>
+      <div class="jp" id="jp">読み込み中...</div>
+      <div class="note" id="note">英語で書こう</div>
+    </section>
+
+    <div class="answerWrap">
+      <input id="answer" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="go" placeholder="ここに手書き / 入力" />
+    </div>
+
+    <div class="feedback" id="feedback">　</div>
+
+    <div class="actions">
+      <button id="check" class="primary">判定する</button>
+      <button id="again" class="ghost">もう一回</button>
+      <button id="hint" class="ghost">ヒント</button>
+      <button id="show" class="ghost">答えを見る</button>
+      <button id="skip" class="ghost">スキップ</button>
+    </div>
+
+    <div class="smallText">
+      コツ：iPadの「スクリブル」がONなら、入力欄に英単語をペンで書くだけで文字に変換されます。<br>
+      2語の答えはスペースも必要です。例：<b>on time</b> / <b>by accident</b>
+    </div>
+
+    <div class="missBox" id="missBox">
+      <b>苦手リスト</b>
+      <div class="misses" id="misses"></div>
+    </div>
+
+    <details>
+      <summary>収録問題を見る</summary>
+      <div class="list" id="wordList"></div>
+    </details>
+  </main>
+</div>
+<div class="confetti" id="confetti"></div>
+
+<script>
+const WORDS = [
+  {no:1, type:"単語", jp:"～だが、だけれども", answers:["though","although"]},
+  {no:2, type:"単語", jp:"心配して", answers:["worried"]},
+  {no:3, type:"単語", jp:"一人で、単独で", answers:["alone"]},
+  {no:4, type:"単語", jp:"機会、チャンス", answers:["chance"]},
+  {no:5, type:"単語", jp:"賛成する", answers:["agree"]},
+  {no:6, type:"単語", jp:"時間通りに（2語）", answers:["on time"]},
+  {no:7, type:"単語", jp:"経験", answers:["experience"]},
+  {no:8, type:"単語", jp:"娘", answers:["daughter"]},
+  {no:9, type:"単語", jp:"～を望む", answers:["hope"]},
+  {no:10, type:"単語", jp:"～を信じる", answers:["believe"]},
+  {no:11, type:"単語", jp:"試験", answers:["examination"]},
+  {no:12, type:"単語", jp:"（太陽や月が）昇る", answers:["rise"]},
+  {no:13, type:"単語", jp:"（太陽や月が）沈む", answers:["set"]},
+  {no:14, type:"単語", jp:"東", answers:["east"]},
+  {no:15, type:"単語", jp:"西", answers:["west"]},
+  {no:16, type:"単語", jp:"作り出す、引き起こす", answers:["create"]},
+  {no:17, type:"単語", jp:"土地、地面", answers:["land"]},
+  {no:18, type:"単語", jp:"人間の", answers:["human"]},
+  {no:19, type:"単語", jp:"活動", answers:["activity"]},
+  {no:20, type:"単語", jp:"偶然に、思いがけず（2語）", answers:["by accident"]},
+  {no:21, type:"単語", jp:"目的、意図", answers:["purpose"]},
+  {no:22, type:"単語", jp:"本来の、最初の", answers:["original"]},
+  {no:23, type:"単語", jp:"～を狩る", answers:["hunt"]},
+  {no:24, type:"単語", jp:"生き残る", answers:["survive"]},
+  {no:25, type:"単語", jp:"戦争", answers:["war"]},
+  {no:26, type:"単語", jp:"森林、森", answers:["forest"]},
+  {no:27, type:"単語", jp:"消失する", answers:["disappear"]},
+  {no:28, type:"単語", jp:"科学者", answers:["scientist"]},
+  {no:29, type:"単語", jp:"政府", answers:["government"]},
+  {no:30, type:"単語", jp:"広める、広げる", answers:["spread"]},
+  {no:31, type:"単語", jp:"タネ", answers:["seed"]},
+  {no:32, type:"単語", jp:"彼ら（彼女ら）自身で（2語）", answers:["by themselves"]},
+  {no:33, type:"単語", jp:"世紀", answers:["century"]},
+  {no:34, type:"単語", jp:"似た、同じような", answers:["similar"]},
+  {no:35, type:"単語", jp:"役割", answers:["role"]},
+  {no:36, type:"単語", jp:"危険、危機", answers:["danger"]},
+  {no:37, type:"単語", jp:"場合", answers:["case"]},
+  {no:38, type:"単語", jp:"どちらにしても（2語）", answers:["either way"]},
+  {no:39, type:"単語", jp:"地球", answers:["earth"]},
+  {no:40, type:"単語", jp:"環境の", answers:["environmental"]},
+  {no:41, type:"単語", jp:"選択、選択肢", answers:["choice"]}
+];
+
+const AUX = [
+  {no:"A1", type:"助動詞", jp:"できる・あり得る（原形）", answers:["can"]},
+  {no:"A2", type:"助動詞", jp:"できる・あり得る（過去形）", answers:["could"]},
+  {no:"A3", type:"助動詞", jp:"しなければならない（2語・原形）", answers:["have to","has to"]},
+  {no:"A4", type:"助動詞", jp:"しなければならない（過去形）", answers:["had to"]},
+  {no:"A5", type:"助動詞", jp:"しなければならない、違いない（1語・原形）", answers:["must"]},
+  {no:"A6", type:"助動詞", jp:"must の過去形", answers:["なし","none","no past","no past form"]},
+  {no:"A7", type:"助動詞", jp:"するつもりだ、～だろう（原形）", answers:["will"]},
+  {no:"A8", type:"助動詞", jp:"するつもりだ、～だろう（過去形）", answers:["would"]},
+  {no:"A9", type:"助動詞", jp:"しませんか、しましょうか（原形）", answers:["shall"]},
+  {no:"A10", type:"助動詞", jp:"shall の過去形", answers:["なし","none","no past","no past form"]},
+  {no:"A11", type:"助動詞", jp:"するべきだ、した方がいい（原形）", answers:["should"]},
+  {no:"A12", type:"助動詞", jp:"should の過去形", answers:["なし","none","no past","no past form"]}
+];
+
+let mode = "words";
+let shuffleMode = true;
+let deck = [];
+let index = 0;
+let correct = 0;
+let attempts = 0;
+let streak = 0;
+let misses = new Map();
+let locked = false;
+let hintLevel = 0;
+
+const $ = id => document.getElementById(id);
+const answer = $("answer");
+const feedback = $("feedback");
+
+function norm(s){
+  return String(s)
+    .normalize("NFKC")
+    .toLowerCase()
+    .trim()
+    .replace(/[.,!?;:。、，．’']/g,"")
+    .replace(/\s+/g," ");
+}
+
+function currentPool(){
+  if(mode === "aux") return AUX;
+  if(mode === "all") return [...WORDS, ...AUX];
+  if(mode === "miss"){
+    const keys = [...misses.keys()];
+    const all = [...WORDS, ...AUX];
+    const m = all.filter(x => keys.includes(String(x.no)));
+    return m.length ? m : WORDS;
+  }
+  return WORDS;
+}
+
+function makeDeck(){
+  deck = [...currentPool()];
+  if(shuffleMode){
+    for(let i=deck.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+  }
+  index = 0;
+  correct = 0;
+  attempts = 0;
+  streak = 0;
+  hintLevel = 0;
+  updateStats();
+  showQuestion();
+}
+
+function q(){ return deck[index]; }
+
+function showQuestion(){
+  locked = false;
+  hintLevel = 0;
+  const item = q();
+  if(!item){
+    finish();
+    return;
+  }
+  $("qNo").textContent = "No." + item.no;
+  $("qType").textContent = item.type;
+  $("jp").textContent = item.jp;
+  $("note").textContent = "英語で書こう";
+  answer.value = "";
+  answer.className = "";
+  feedback.className = "feedback";
+  feedback.textContent = "　";
+  updateStats();
+  setTimeout(()=>answer.focus(), 80);
+}
+
+function accepted(item, value){
+  const v = norm(value);
+  return item.answers.map(norm).includes(v);
+}
+
+function autoCheck(){
+  if(locked) return;
+  const item = q();
+  if(!item) return;
+  if(accepted(item, answer.value)){
+    success();
+  }
+}
+
+function checkNow(){
+  if(locked) return;
+  const item = q();
+  const v = norm(answer.value);
+  if(!v){
+    feedback.className = "feedback warn";
+    feedback.textContent = "まず書いてみよ！";
+    answer.focus();
+    return;
+  }
+  if(accepted(item, answer.value)){
+    success();
+  }else{
+    fail();
+  }
+}
+
+function success(){
+  locked = true;
+  correct++;
+  attempts++;
+  streak++;
+  answer.className = "correct";
+  feedback.className = "feedback good";
+  feedback.textContent = "正解！次いくで ✅";
+  burst();
+  updateStats();
+  setTimeout(()=>{
+    index++;
+    if(index >= deck.length) finish();
+    else showQuestion();
+  }, 720);
+}
+
+function fail(){
+  const item = q();
+  attempts++;
+  streak = 0;
+  misses.set(String(item.no), item);
+  localStorage.setItem("juneWordMisses", JSON.stringify([...misses.keys()]));
+  answer.className = "wrong";
+  feedback.className = "feedback bad";
+  feedback.textContent = "惜しい！もう一回 ✍️";
+  updateStats();
+  renderMisses();
+  setTimeout(()=>{
+    answer.value = "";
+    answer.className = "";
+    answer.focus();
+  }, 520);
+}
+
+function finish(){
+  locked = true;
+  $("jp").textContent = "終了！おつかれ！";
+  $("note").textContent = "もう一周するとかなり固まるで。";
+  $("qNo").textContent = "Finish";
+  $("qType").textContent = mode === "aux" ? "助動詞" : mode === "all" ? "全部" : "単語";
+  answer.value = "";
+  feedback.className = "feedback good";
+  feedback.textContent = `結果：${correct}/${deck.length} 正解`;
+  updateStats();
+}
+
+function updateStats(){
+  $("done").textContent = correct;
+  $("total").textContent = deck.length || currentPool().length;
+  $("streak").textContent = streak;
+  const acc = attempts ? Math.round(correct / attempts * 100) : 100;
+  $("accuracy").textContent = acc + "%";
+}
+
+function setMode(next){
+  mode = next;
+  document.querySelectorAll(".toolbar button").forEach(b=>b.classList.remove("primary"));
+  $("modeWords").classList.toggle("primary", next === "words");
+  $("modeAux").classList.toggle("primary", next === "aux");
+  $("modeAll").classList.toggle("primary", next === "all");
+  $("missOnly").classList.toggle("primary", next === "miss");
+  if(next !== "miss") $("missOnly").classList.add("ghost");
+  makeDeck();
+}
+
+function showHint(){
+  const item = q();
+  if(!item) return;
+  hintLevel++;
+  const a = item.answers[0];
+  if(hintLevel === 1){
+    const words = a.split(" ").length;
+    feedback.className = "feedback warn";
+    feedback.textContent = `ヒント：${words}語 / 最初は「${a[0]}」`;
+  }else{
+    const shown = a.split("").map((c,i)=> c===" " ? " " : (i < Math.ceil(a.length/2) ? c : "＿")).join("");
+    feedback.className = "feedback warn";
+    feedback.textContent = `ヒント：${shown}`;
+  }
+  answer.focus();
+}
+
+function reveal(){
+  const item = q();
+  if(!item) return;
+  feedback.className = "feedback warn";
+  feedback.textContent = `答え：${item.answers.join(" / ")}`;
+  misses.set(String(item.no), item);
+  localStorage.setItem("juneWordMisses", JSON.stringify([...misses.keys()]));
+  renderMisses();
+  answer.focus();
+}
+
+function skip(){
+  const item = q();
+  if(item){
+    misses.set(String(item.no), item);
+    localStorage.setItem("juneWordMisses", JSON.stringify([...misses.keys()]));
+    renderMisses();
+  }
+  index++;
+  if(index >= deck.length) finish();
+  else showQuestion();
+}
+
+function renderList(){
+  const box = $("wordList");
+  box.innerHTML = "";
+  [...WORDS, ...AUX].forEach(item=>{
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `<b>No.${item.no}　${item.jp}</b><br><span>${item.answers.join(" / ")}</span>`;
+    box.appendChild(div);
+  });
+}
+
+function renderMisses(){
+  const box = $("missBox");
+  const list = $("misses");
+  list.innerHTML = "";
+  if(misses.size === 0){
+    box.classList.remove("show");
+    return;
+  }
+  box.classList.add("show");
+  for(const item of misses.values()){
+    const chip = document.createElement("span");
+    chip.className = "missChip";
+    chip.textContent = `No.${item.no} ${item.jp}`;
+    list.appendChild(chip);
+  }
+}
+
+function loadMisses(){
+  try{
+    const saved = JSON.parse(localStorage.getItem("juneWordMisses") || "[]");
+    const all = [...WORDS, ...AUX];
+    saved.forEach(no=>{
+      const found = all.find(x => String(x.no) === String(no));
+      if(found) misses.set(String(found.no), found);
+    });
+  }catch(e){}
+  renderMisses();
+}
+
+function burst(){
+  const layer = $("confetti");
+  const colors = ["#3b82f6","#22c55e","#f59e0b","#ef4444","#a855f7"];
+  for(let i=0;i<16;i++){
+    const p = document.createElement("i");
+    p.style.left = Math.random()*100 + "vw";
+    p.style.color = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDelay = Math.random()*0.15 + "s";
+    p.style.transform = `rotate(${Math.random()*180}deg)`;
+    layer.appendChild(p);
+    setTimeout(()=>p.remove(), 1300);
+  }
+}
+
+answer.addEventListener("input", autoCheck);
+answer.addEventListener("keydown", e=>{
+  if(e.key === "Enter"){
+    e.preventDefault();
+    checkNow();
+  }
+});
+
+$("check").addEventListener("click", checkNow);
+$("again").addEventListener("click", ()=>{answer.value=""; answer.className=""; feedback.textContent="　"; answer.focus();});
+$("hint").addEventListener("click", showHint);
+$("show").addEventListener("click", reveal);
+$("skip").addEventListener("click", skip);
+$("reset").addEventListener("click", makeDeck);
+$("shuffle").addEventListener("click", ()=>{
+  shuffleMode = !shuffleMode;
+  $("shuffle").textContent = shuffleMode ? "シャッフル ON" : "シャッフル OFF";
+  $("shuffle").classList.toggle("on", shuffleMode);
+  makeDeck();
+});
+$("modeWords").addEventListener("click", ()=>setMode("words"));
+$("modeAux").addEventListener("click", ()=>setMode("aux"));
+$("modeAll").addEventListener("click", ()=>setMode("all"));
+$("missOnly").addEventListener("click", ()=>setMode("miss"));
+
+renderList();
+loadMisses();
+makeDeck();
+</script>
+</body>
+</html>
