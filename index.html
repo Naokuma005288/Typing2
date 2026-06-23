@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja">
 <head>
-< charset="utf-8" />
+<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>6月単語テスト 手書き練習</title>
 <style>
@@ -276,6 +276,94 @@
   @keyframes fall{
     to{transform:translateY(110svh) rotate(540deg); opacity:0}
   }
+
+  input#answer[readonly]{
+    cursor:default;
+    user-select:none;
+  }
+  .handPanel{
+    margin-top:12px;
+    border:1px solid var(--line);
+    border-radius:22px;
+    background:linear-gradient(180deg, #ffffff, #f8fafc);
+    padding:14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+  }
+  .handHead{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .handHead b{
+    display:block;
+    font-size:15px;
+    font-weight:950;
+  }
+  #handStatus{
+    display:block;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:800;
+    margin-top:3px;
+    line-height:1.45;
+  }
+  .handBadge{
+    flex:0 0 auto;
+    border-radius:999px;
+    background:#111827;
+    color:#fff;
+    padding:7px 10px;
+    font-size:11px;
+    font-weight:950;
+    letter-spacing:.04em;
+  }
+  #handCanvas{
+    width:100%;
+    height:190px;
+    display:block;
+    border:3px solid #d6dbe8;
+    border-radius:18px;
+    background:
+      linear-gradient(90deg, transparent 0, transparent calc(50% - 1px), rgba(59,130,246,.10) 50%, transparent calc(50% + 1px)),
+      repeating-linear-gradient(0deg, transparent 0, transparent 46px, rgba(59,130,246,.12) 47px),
+      #fff;
+    touch-action:none;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  .candidateRow{
+    min-height:42px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    padding-top:10px;
+  }
+  .candidateRow .candidateHint{
+    color:var(--muted);
+    font-size:12px;
+    font-weight:800;
+  }
+  .candidateRow button{
+    min-width:48px;
+    padding:9px 12px;
+    font-size:16px;
+    background:#ecfdf5;
+    color:#14532d;
+  }
+  .candidateRow button:first-of-type{
+    background:#dbeafe;
+    color:#1e3a8a;
+  }
+  .handTools{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:10px;
+  }
+
   @media (max-width:720px){
     .app{padding:14px}
     header{display:block}
@@ -292,7 +380,7 @@
   <header>
     <div>
       <h1>6月単語テスト<br>手書き練習</h1>
-      <div class="sub">Apple Pencilなら下の入力欄にそのまま書けます。正解したら自動で次へ、不正解なら同じ問題をもう一回。</div>
+      <div class="sub">Apple Pencilや指で下の手書きパッドに1文字ずつ書けます。純正スクリブルに頼らず、このページ内で文字を認識します。</div>
     </div>
     <div class="pill">30点以上合格モード🔥</div>
   </header>
@@ -324,7 +412,25 @@
     </section>
 
     <div class="answerWrap">
-      <input id="answer" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="go" placeholder="ここに手書き / 入力" />
+      <input id="answer" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="go" inputmode="none" readonly placeholder="認識結果がここに入る" />
+      <div class="handPanel">
+        <div class="handHead">
+          <div>
+            <b>独自手書きパッド</b>
+            <span id="handStatus">1文字ずつ書いてな。少し止まると自動認識します。</span>
+          </div>
+          <span class="handBadge">No Scribble</span>
+        </div>
+        <canvas id="handCanvas" aria-label="手書き入力パッド"></canvas>
+        <div class="candidateRow" id="candidates" aria-label="認識候補"></div>
+        <div class="handTools">
+          <button id="recognizeChar" class="primary">この文字を認識</button>
+          <button id="spaceChar" class="ghost">スペース</button>
+          <button id="undoChar" class="ghost">1文字消す</button>
+          <button id="clearGlyph" class="ghost">パッド消す</button>
+          <button id="clearAnswer" class="bad">答え欄クリア</button>
+        </div>
+      </div>
     </div>
 
     <div class="feedback" id="feedback">　</div>
@@ -338,8 +444,8 @@
     </div>
 
     <div class="smallText">
-      コツ：iPadの「スクリブル」がONなら、入力欄に英単語をペンで書くだけで文字に変換されます。<br>
-      2語の答えはスペースも必要です。例：<b>on time</b> / <b>by accident</b>
+      コツ：下のパッドに <b>1文字ずつ</b> 書くと、このページ内の認識エンジンが英字に変換します。候補が違ったら候補ボタンで直せます。<br>
+      2語の答えは「スペース」ボタンも使ってな。例：<b>on time</b> / <b>by accident</b>
     </div>
 
     <div class="missBox" id="missBox">
@@ -430,6 +536,384 @@ const $ = id => document.getElementById(id);
 const answer = $("answer");
 const feedback = $("feedback");
 
+const handCanvas = $("handCanvas");
+const handCtx = handCanvas.getContext("2d");
+const candidatesBox = $("candidates");
+const handStatus = $("handStatus");
+let handStrokes = [];
+let activeStroke = null;
+let recognizeTimer = null;
+let templateCache = null;
+let canvasCssWidth = 0;
+let canvasCssHeight = 0;
+let lastWasAutoChar = false;
+
+function setAnswerValue(value){
+  answer.value = value;
+  autoCheck();
+}
+
+function appendRecognizedChar(ch, candidates){
+  if(!ch) return;
+  setAnswerValue(answer.value + ch);
+  lastWasAutoChar = true;
+  renderCandidates(candidates || []);
+  resetHandPad();
+}
+
+function replaceLastChar(ch){
+  if(!answer.value) return;
+  setAnswerValue(answer.value.slice(0, -1) + ch);
+  handStatus.textContent = `候補から「${ch}」に直したで。`;
+  lastWasAutoChar = false;
+}
+
+function addSpace(){
+  if(!answer.value || answer.value.endsWith(" ")) return;
+  setAnswerValue(answer.value + " ");
+  renderCandidates([]);
+  handStatus.textContent = "スペースを入れたで。";
+}
+
+function undoChar(){
+  setAnswerValue(answer.value.slice(0, -1));
+  renderCandidates([]);
+  handStatus.textContent = "1文字戻したで。";
+}
+
+function clearAnswerValue(){
+  setAnswerValue("");
+  renderCandidates([]);
+  handStatus.textContent = "答え欄を空にしたで。";
+}
+
+function renderCandidates(candidates){
+  candidatesBox.innerHTML = "";
+  if(!candidates || candidates.length === 0){
+    const span = document.createElement("span");
+    span.className = "candidateHint";
+    span.textContent = "候補はここに出ます。違ったら候補をタップして最後の文字を置き換え。";
+    candidatesBox.appendChild(span);
+    return;
+  }
+  const label = document.createElement("span");
+  label.className = "candidateHint";
+  label.textContent = "候補：";
+  candidatesBox.appendChild(label);
+  candidates.slice(0, 6).forEach(c=>{
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = c.char;
+    b.title = `score ${c.score.toFixed(3)}`;
+    b.addEventListener("click", ()=>replaceLastChar(c.char));
+    candidatesBox.appendChild(b);
+  });
+}
+
+function setupHandCanvas(){
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const rect = handCanvas.getBoundingClientRect();
+  canvasCssWidth = Math.max(320, rect.width);
+  canvasCssHeight = Math.max(160, rect.height);
+  handCanvas.width = Math.round(canvasCssWidth * dpr);
+  handCanvas.height = Math.round(canvasCssHeight * dpr);
+  handCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  redrawHandPad();
+}
+
+function drawGuide(){
+  handCtx.clearRect(0, 0, canvasCssWidth, canvasCssHeight);
+  handCtx.save();
+  handCtx.strokeStyle = "rgba(59,130,246,.16)";
+  handCtx.lineWidth = 2;
+  handCtx.setLineDash([8, 8]);
+  handCtx.beginPath();
+  handCtx.moveTo(canvasCssWidth / 2, 12);
+  handCtx.lineTo(canvasCssWidth / 2, canvasCssHeight - 12);
+  handCtx.stroke();
+  handCtx.restore();
+  handCtx.save();
+  handCtx.fillStyle = "rgba(109,114,128,.42)";
+  handCtx.font = "900 13px system-ui, sans-serif";
+  handCtx.fillText("ここに1文字を書く", 16, 24);
+  handCtx.restore();
+}
+
+function drawStroke(stroke){
+  if(!stroke || stroke.length === 0) return;
+  handCtx.save();
+  handCtx.strokeStyle = "#111827";
+  handCtx.lineWidth = 7;
+  handCtx.lineCap = "round";
+  handCtx.lineJoin = "round";
+  handCtx.beginPath();
+  handCtx.moveTo(stroke[0].x, stroke[0].y);
+  for(const p of stroke.slice(1)) handCtx.lineTo(p.x, p.y);
+  handCtx.stroke();
+  if(stroke.length === 1){
+    handCtx.beginPath();
+    handCtx.arc(stroke[0].x, stroke[0].y, 3.5, 0, Math.PI * 2);
+    handCtx.fillStyle = "#111827";
+    handCtx.fill();
+  }
+  handCtx.restore();
+}
+
+function redrawHandPad(){
+  drawGuide();
+  handStrokes.forEach(drawStroke);
+  if(activeStroke) drawStroke(activeStroke);
+}
+
+function resetHandPad(){
+  handStrokes = [];
+  activeStroke = null;
+  clearTimeout(recognizeTimer);
+  redrawHandPad();
+}
+
+function canvasPoint(e){
+  const rect = handCanvas.getBoundingClientRect();
+  return {
+    x: Math.max(0, Math.min(rect.width, e.clientX - rect.left)),
+    y: Math.max(0, Math.min(rect.height, e.clientY - rect.top))
+  };
+}
+
+function scheduleGlyphRecognition(){
+  clearTimeout(recognizeTimer);
+  recognizeTimer = setTimeout(()=>recognizeCurrentGlyph(true), 620);
+}
+
+function recognizeCurrentGlyph(auto=false){
+  clearTimeout(recognizeTimer);
+  if(activeStroke && activeStroke.length){
+    handStrokes.push(activeStroke);
+    activeStroke = null;
+  }
+  const pointCount = handStrokes.reduce((sum, s)=>sum + s.length, 0);
+  if(pointCount < 2){
+    handStatus.textContent = "もう少し大きく書いてみてな。";
+    return;
+  }
+  const ranked = recognizeGlyph(handStrokes);
+  if(!ranked.length){
+    handStatus.textContent = "認識できんかった…もう一回大きめに書いてみて。";
+    return;
+  }
+  const top = ranked[0];
+  handStatus.textContent = auto
+    ? `「${top.char}」として入れたで。違ったら候補をタップ。`
+    : `認識結果は「${top.char}」。違ったら候補をタップ。`;
+  appendRecognizedChar(top.char, ranked);
+}
+
+function handlePointerDown(e){
+  e.preventDefault();
+  handCanvas.setPointerCapture?.(e.pointerId);
+  clearTimeout(recognizeTimer);
+  activeStroke = [canvasPoint(e)];
+  redrawHandPad();
+}
+
+function handlePointerMove(e){
+  if(!activeStroke) return;
+  e.preventDefault();
+  const p = canvasPoint(e);
+  const last = activeStroke[activeStroke.length - 1];
+  const dx = p.x - last.x;
+  const dy = p.y - last.y;
+  if(Math.hypot(dx, dy) < 1.5) return;
+  activeStroke.push(p);
+  redrawHandPad();
+}
+
+function handlePointerUp(e){
+  if(!activeStroke) return;
+  e.preventDefault();
+  if(activeStroke.length) handStrokes.push(activeStroke);
+  activeStroke = null;
+  redrawHandPad();
+  scheduleGlyphRecognition();
+}
+
+function makeArc(cx, cy, rx, ry, start, end, steps=24){
+  const pts = [];
+  for(let i=0;i<=steps;i++){
+    const t = start + (end - start) * i / steps;
+    pts.push({x:cx + Math.cos(t) * rx, y:cy + Math.sin(t) * ry});
+  }
+  return pts;
+}
+function makeLine(...pts){ return pts.map(([x,y])=>({x,y})); }
+function makeDot(x,y){ return makeArc(x, y, 3, 3, 0, Math.PI * 2, 10); }
+
+function vectorGlyphs(){
+  const T = {};
+  T.a = [[...makeArc(47,58,21,23,0,Math.PI*2,30)], makeLine([68,38],[68,82])];
+  T.b = [makeLine([32,18],[32,84]), [...makeArc(52,60,21,23,-Math.PI/2,Math.PI*1.5,30)]];
+  T.c = [[...makeArc(56,58,26,27,Math.PI*0.18,Math.PI*1.82,32)]];
+  T.d = [[...makeArc(48,60,22,24,0,Math.PI*2,30)], makeLine([70,18],[70,84])];
+  T.e = [[...makeArc(55,60,26,25,Math.PI*0.25,Math.PI*1.82,30)], makeLine([33,58],[76,58])];
+  T.f = [makeLine([58,20],[48,84]), makeLine([34,48],[70,48]), [...makeArc(62,27,18,13,Math.PI,Math.PI*1.72,12)]];
+  T.g = [[...makeArc(48,55,22,22,0,Math.PI*2,30)], makeLine([70,40],[66,89],[52,96])];
+  T.h = [makeLine([32,18],[32,84]), [...makeArc(54,59,23,25,Math.PI,0,20)], makeLine([77,59],[77,84])];
+  T.i = [makeLine([50,43],[50,84]), makeDot(50,25)];
+  T.j = [makeLine([58,43],[56,84],[44,94]), makeDot(58,25)];
+  T.k = [makeLine([34,18],[34,84]), makeLine([72,38],[35,62],[74,84])];
+  T.l = [makeLine([50,18],[50,84])];
+  T.m = [makeLine([24,84],[24,44],[42,44],[42,84]), makeLine([42,44],[60,44],[60,84]), makeLine([60,44],[78,44],[78,84])];
+  T.n = [makeLine([30,84],[30,44],[56,44],[72,84])];
+  T.o = [[...makeArc(50,58,25,27,0,Math.PI*2,34)]];
+  T.p = [makeLine([32,42],[32,96]), [...makeArc(54,57,22,22,-Math.PI/2,Math.PI*1.5,28)]];
+  T.q = [[...makeArc(47,58,22,24,0,Math.PI*2,30)], makeLine([68,42],[70,96])];
+  T.r = [makeLine([34,84],[34,44],[58,44]), [...makeArc(58,54,20,13,Math.PI*1.1,Math.PI*1.9,12)]];
+  T.s = [makeLine([72,38],[46,35],[34,49],[49,60],[68,70],[56,84],[30,80])];
+  T.t = [makeLine([54,24],[54,84]), makeLine([35,48],[73,48])];
+  T.u = [makeLine([28,44],[28,74],[42,86],[58,86],[72,74],[72,44])];
+  T.v = [makeLine([28,44],[50,84],[72,44])];
+  T.w = [makeLine([20,44],[36,84],[50,54],[64,84],[80,44])];
+  T.x = [makeLine([30,42],[72,84]), makeLine([72,42],[30,84])];
+  T.y = [makeLine([28,44],[50,72],[72,44]), makeLine([50,72],[38,96])];
+  T.z = [makeLine([28,42],[72,42],[30,84],[74,84])];
+  return T;
+}
+
+function rasterizeNormalizedStrokes(strokes, size=40){
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d");
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 4.8;
+  for(const stroke of strokes){
+    if(!stroke.length) continue;
+    ctx.beginPath();
+    ctx.moveTo(stroke[0].x / 100 * (size - 8) + 4, stroke[0].y / 100 * (size - 8) + 4);
+    for(const p of stroke.slice(1)) ctx.lineTo(p.x / 100 * (size - 8) + 4, p.y / 100 * (size - 8) + 4);
+    ctx.stroke();
+  }
+  return alphaArray(ctx, size);
+}
+
+function rasterizeUserStrokes(strokes, size=40){
+  const pts = strokes.flat();
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for(const p of pts){
+    minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+  }
+  const w = Math.max(8, maxX - minX);
+  const h = Math.max(8, maxY - minY);
+  const scale = (size - 10) / Math.max(w, h);
+  const ox = (size - w * scale) / 2;
+  const oy = (size - h * scale) / 2;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d");
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#000";
+  ctx.fillStyle = "#000";
+  ctx.lineWidth = 4.8;
+  for(const stroke of strokes){
+    if(!stroke.length) continue;
+    ctx.beginPath();
+    ctx.moveTo((stroke[0].x - minX) * scale + ox, (stroke[0].y - minY) * scale + oy);
+    for(const p of stroke.slice(1)) ctx.lineTo((p.x - minX) * scale + ox, (p.y - minY) * scale + oy);
+    ctx.stroke();
+    if(stroke.length === 1){
+      ctx.beginPath();
+      ctx.arc((stroke[0].x - minX) * scale + ox, (stroke[0].y - minY) * scale + oy, 2.8, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+  return alphaArray(ctx, size);
+}
+
+function alphaArray(ctx, size){
+  const data = ctx.getImageData(0, 0, size, size).data;
+  const arr = new Float32Array(size * size);
+  for(let i=0, j=0;i<data.length;i+=4,j++) arr[j] = data[i+3] / 255;
+  return arr;
+}
+
+function renderFontTemplate(ch, font, size=40){
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#000";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = font;
+  ctx.fillText(ch, size / 2, size / 2 + 1);
+  return alphaArray(ctx, size);
+}
+
+function buildTemplates(){
+  const templates = [];
+  const vectors = vectorGlyphs();
+  for(const [char, strokes] of Object.entries(vectors)){
+    templates.push({char, data:rasterizeNormalizedStrokes(strokes), kind:"vector"});
+  }
+  const fonts = [
+    "900 34px Arial",
+    "700 34px Georgia",
+    "700 35px Trebuchet MS",
+    "400 35px Comic Sans MS",
+    "700 34px Chalkboard SE",
+    "700 34px Noteworthy"
+  ];
+  for(const char of "abcdefghijklmnopqrstuvwxyz"){
+    for(const font of fonts){
+      templates.push({char, data:renderFontTemplate(char, font), kind:"font"});
+      templates.push({char, data:renderFontTemplate(char.toUpperCase(), font), kind:"fontUpper"});
+    }
+  }
+  return templates;
+}
+
+function rasterScore(a, b){
+  let diff = 0, overlap = 0, union = 0;
+  for(let i=0;i<a.length;i++){
+    const av = a[i], bv = b[i];
+    diff += Math.abs(av - bv);
+    overlap += Math.min(av, bv);
+    union += Math.max(av, bv);
+  }
+  const iou = overlap / (union + 1e-6);
+  return diff / a.length - iou * 0.42;
+}
+
+function recognizeGlyph(strokes){
+  templateCache ||= buildTemplates();
+  const input = rasterizeUserStrokes(strokes);
+  const best = new Map();
+  for(const t of templateCache){
+    const score = rasterScore(input, t.data);
+    const prev = best.get(t.char);
+    if(prev === undefined || score < prev) best.set(t.char, score);
+  }
+  return [...best.entries()]
+    .map(([char, score])=>({char, score}))
+    .sort((a,b)=>a.score - b.score);
+}
+
+handCanvas.addEventListener("pointerdown", handlePointerDown);
+handCanvas.addEventListener("pointermove", handlePointerMove);
+handCanvas.addEventListener("pointerup", handlePointerUp);
+handCanvas.addEventListener("pointercancel", handlePointerUp);
+window.addEventListener("resize", setupHandCanvas);
+$("recognizeChar").addEventListener("click", ()=>recognizeCurrentGlyph(false));
+$("spaceChar").addEventListener("click", addSpace);
+$("undoChar").addEventListener("click", undoChar);
+$("clearGlyph").addEventListener("click", ()=>{ resetHandPad(); handStatus.textContent = "パッドを消したで。"; });
+$("clearAnswer").addEventListener("click", clearAnswerValue);
+renderCandidates([]);
+setupHandCanvas();
+
+
 function norm(s){
   return String(s)
     .normalize("NFKC")
@@ -486,6 +970,8 @@ function showQuestion(){
   answer.className = "";
   feedback.className = "feedback";
   feedback.textContent = "　";
+  resetHandPad();
+  renderCandidates([]);
   updateStats();
   setTimeout(()=>answer.focus(), 80);
 }
@@ -690,7 +1176,7 @@ answer.addEventListener("keydown", e=>{
 });
 
 $("check").addEventListener("click", checkNow);
-$("again").addEventListener("click", ()=>{answer.value=""; answer.className=""; feedback.textContent="　"; answer.focus();});
+$("again").addEventListener("click", ()=>{setAnswerValue(""); answer.className=""; feedback.textContent="　"; resetHandPad(); renderCandidates([]); handStatus.textContent="もう一回、1文字ずつ書いてな。";});
 $("hint").addEventListener("click", showHint);
 $("show").addEventListener("click", reveal);
 $("skip").addEventListener("click", skip);
